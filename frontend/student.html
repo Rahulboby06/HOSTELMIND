@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-layer-group"></i> HOSTEL MIND
+        </div>
+        <div class="nav-user">
+            <div class="user-badge">
+                <div class="user-avatar" id="avatarInitials" style="background: #f06f05; color: rgb(250, 249, 247);">S
+                </div>
+                <span id="userNameDisplay">Student</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="font-size: 1.8rem; font-weight: 700;">Report an Issue</h1>
+            <p style="color: var(--text-muted);">We use AI to prioritize your requests.</p>
+        </header>
+
+        <div class="grid-2" style="grid-template-columns: 2fr 1fr;">
+
+            <!-- Complaint Form -->
+            <div class="form-card">
+                <form id="complaintForm">
+                    <div class="form-group">
+                        <label class="form-label">Your complaint</label>
+                        <textarea id="description" class="form-textarea" rows="4"
+                            placeholder="e.g. 'Water leaking profusely from the bathroom tap in room 302...'"
+                            required></textarea>
+                    </div>
+
+                    <div class="grid-2" style="margin-bottom: 1.5rem;">
+                        <div>
+                            <label class="form-label"><i class="fa-solid fa-tag"></i> Category</label>
+                            <select id="category" class="form-select">
+                                <option value="Plumbing">Plumbing</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Mess">Mess</option>
+                                <option value="Cleaning">Cleaning</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label"><i class="fa-solid fa-list"></i> Type</label>
+                            <select id="type" class="form-select">
+                                <option value="Hostel Complaint">Hostel Complaint</option>
+                                <option value="Mess Feedback">Mess Feedback</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-3" style="margin-bottom: 2rem; grid-template-columns: 1fr 1fr 1fr;">
+                        <div>
+                            <label class="form-label"><i class="fa-solid fa-building"></i> Hostel</label>
+                            <select id="hostel" class="form-select">
+                                <option value="C1">C1</option>
+                                <option value="C2">C2</option>
+                                <option value="C3">C3</option>
+                                <option value="C4">C4</option>
+                                <option value="C5">C5</option>
+                                <option value="C6">C6</option>
+                                <option value="C7">C7</option>
+                                <option value="C8">C8</option>
+                                <option value="C9">C9</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label"><i class="fa-solid fa-stairs"></i> Floor</label>
+                            <select id="floor" class="form-select">
+                                <option value="1">1st Floor</option>
+                                <option value="2">2nd Floor</option>
+                                <option value="3">3rd Floor</option>
+                                <option value="4">4th Floor</option>
+                                <option value="5">5th Floor</option>
+                                <option value="6">6th Floor</option>
+                                <option value="7">7th Floor</option>
+                                <option value="8">8th Floor</option>
+                                <option value="9">9th Floor</option>
+                                <option value="10">10th Floor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label"><i class="fa-solid fa-hashtag"></i> Room</label>
+                            <input type="text" id="roomNumber" class="form-input" placeholder="e.g. 302"
+                                style="padding: 0.5rem 1rem;">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Request
+                    </button>
+                </form>
+            </div>
+
+            <!-- Side Info -->
+            <div>
+                <div class="stat-card" style="margin-bottom: 1.5rem; display:block; padding: 2rem;">
+                    <div style="text-align:center; margin-bottom: 1rem; color: var(--primary); font-size: 2rem;">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h3 style="text-align: center; color: var(--text-main); margin-bottom: 0.5rem;">HOSTELMIND</h3>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">ANY PROBLEM ANYTIME</p>
+
+                </div>
+
+                <div class="glass" style="padding: 1.5rem; border-radius: 16px;">
+                    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-life-ring"></i> Emergency?</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    </p>
+                    <div
+                        style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 0.5rem; border-radius: 8px; text-align: center; font-weight: bold;">
+                        <i class="fa-solid fa-phone"></i> 812115XXXX
+                    </div>
+                </div>
+
+                <!-- Complaints On Me Section -->
+                <div id="complaintsOnMeSection" class="glass" style="margin-top: 1.5rem; padding: 1.5rem; border-radius: 16px; border: 1px solid var(--warning);">
+                    <h4 style="margin-bottom: 1rem; color: var(--warning);"><i class="fa-solid fa-user-shield"></i> Complaints On Me</h4>
+                    <div id="myBehaviourComplaintsList">
+                        <p class="text-muted" style="font-size: 0.85rem;">Checking for complaints...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role !== 'Student') window.location.href = 'index.html';
+
+        document.getElementById('userNameDisplay').textContent = user.username;
+        document.getElementById('avatarInitials').textContent = user.username.charAt(0).toUpperCase();
+
+        // Load Complaints Feed
+        async function loadComplaintsFeed() {
+            try {
+                const res = await fetch('http://localhost:3000/api/complaints?role=Student&username=' + user.username);
+                const complaints = await res.json();
+
+                const container = document.createElement('div');
+                container.style.marginTop = '2rem';
+                container.innerHTML = '<h2 style="margin-bottom:1rem;">All Complaints (Community View)</h2>';
+
+                if (complaints.length === 0) {
+                    container.innerHTML += '<p class="text-muted">No complaints found.</p>';
+                } else {
+                    complaints.forEach(c => {
+                        const card = document.createElement('div');
+                        card.className = 'complaint-card';
+
+                        // Urgency Border Color
+                        const urgencyColor = c.urgency === 'High' ? 'var(--urgency-high)' :
+                            c.urgency === 'Medium' ? 'var(--urgency-medium)' : 'var(--urgency-low)';
+                        card.style.borderLeft = `4px solid ${urgencyColor}`;
+
+                        // Comment HTML generation
+                        let commentsHtml = '';
+                        if (c.comments && c.comments.length > 0) {
+                            c.comments.forEach(com => {
+                                const loggedInUserId = (user._id || user.id || '').toString();
+                                const commentOwnerId = (com.user_id || '').toString();
+                                const isOwner = loggedInUserId && commentOwnerId && loggedInUserId === commentOwnerId;
+
+                                commentsHtml += `
+                                    <div id="comment-${com._id}" style="background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem;">
+                                        <div style="font-weight: 600; color: #334155; display:flex; justify-content:space-between;">
+                                            <span>${com.user_name} <span style="font-weight:400; color:#64748b; font-size:0.8rem;">(${com.role})</span></span>
+                                            <div style="display:flex; gap:10px; align-items:center;">
+                                                <span style="font-weight:400; color:#94a3b8; font-size:0.8rem;">${new Date(com.created_at).toLocaleDateString()}</span>
+                                                ${isOwner ? `
+                                                    <button onclick="deleteComment('${c.id}', '${com._id}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.75rem; padding:0;">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div style="margin-top:4px; color: #475569;">${com.comment_text}</div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            commentsHtml = '<div style="color:#cbd5e1; font-style:italic; font-size:0.85rem; margin-bottom:10px;">No comments yet. Be the first!</div>';
+                        }
+
+                        // Determine if this complaint was created by the logged-in student
+                        const isOwner = c.studentName === user.username;
+
+                        // Build resolution action block
+                        let resolutionHtml = '';
+                        if (c.wardenResolved && c.studentResolved) {
+                            resolutionHtml = `
+                                <div onclick="${isOwner ? `reopenComplaint('${c.id}')` : ''}" style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem; padding:0.6rem 1rem; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.4); border-radius:10px; color:#10b981; font-weight:700; font-size:0.9rem; ${isOwner ? 'cursor:pointer;' : ''}" ${isOwner ? 'title="Click to reopen complaint"' : ''}>
+                                    <i class="fa-solid fa-circle-check"></i> Complaint Fully Resolved
+                                </div>`;
+                        } else if (isOwner && !c.studentResolved) {
+                            resolutionHtml = `
+                                <button id="resolve-btn-${c.id}" onclick="studentResolve('${c.id}')" style="margin-top:0.75rem; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:0.5rem 1.2rem; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                                    <i class="fa-solid fa-check"></i> Mark as Resolved
+                                </button>`;
+                        } else if (isOwner && c.studentResolved && !c.wardenResolved) {
+                            resolutionHtml = `
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem; padding:0.5rem 1rem; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; color:#f59e0b; font-size:0.85rem; font-weight:600;">
+                                    <i class="fa-solid fa-hourglass-half"></i> Waiting for Warden confirmation
+                                </div>`;
+                        }
+
+                        card.innerHTML = `
+                            <div class="complaint-top">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <span class="badge ${c.urgency.toLowerCase()}">${c.urgency}</span>
+                                    <span style="font-weight:600; font-size: 0.9rem;">${c.category}</span>
+                                    <span class="badge" style="background:var(--surface);">${c.status}</span>
+                                </div>
+                                <span class="text-muted text-sm">${new Date(c.timestamp).toLocaleDateString()}</span>
+                            </div>
+                            <div class="complaint-body" style="font-weight:500;">${c.description}</div>
+
+                            <div class="complaint-meta flex-between" style="margin-bottom:0.5rem;">
+                                <span><i class="fa-regular fa-user"></i> ${c.studentName}</span>
+                                <span><i class="fa-solid fa-building"></i> ${c.hostel}</span>
+                            </div>
+                            ${resolutionHtml}
+
+                            <!-- Comments Section -->
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text-muted);"><i class="fa-regular fa-comments"></i> Discussion</h4>
+                                <div id="comments-${c.id}" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem;">
+                                    ${commentsHtml}
+                                </div>
+                                
+                                <div style="display:flex; gap:10px;">
+                                    <input type="text" id="input-${c.id}" class="form-input" placeholder="Add a comment..." style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                    <button class="btn-primary" style="width:auto; margin-top:0; padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="postComment('${c.id}')">Post</button>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+
+                document.querySelector('.grid-2').appendChild(container);
+
+            } catch (err) {
+                console.error("Error loading feed:", err);
+            }
+        }
+
+        async function reopenComplaint(complaintId) {
+            Swal.fire({
+                title: 'Reopen Complaint',
+                text: "Are you sure you want to reopen this complaint? This will mark the complaint as unresolved again.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Yes, reopen it!',
+                background: '#1e293b',
+                color: '#fff'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`http://localhost:3000/api/complaints/${complaintId}/reopen`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ role: 'Student', username: user.username })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            // Reload feed to reflect updated state
+                            document.querySelector('.grid-2').lastChild.remove();
+                            loadComplaintsFeed();
+                            Swal.fire({
+                                title: 'Reopened!',
+                                text: 'The complaint has been reopened.',
+                                icon: 'success',
+                                background: '#1e293b',
+                                color: '#fff'
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message,
+                                icon: 'error',
+                                background: '#1e293b',
+                                color: '#fff'
+                            });
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to reopen complaint.',
+                            icon: 'error',
+                            background: '#1e293b',
+                            color: '#fff'
+                        });
+                    }
+                }
+            });
+        }
+
+        async function studentResolve(complaintId) {
+            const btn = document.getElementById(`resolve-btn-${complaintId}`);
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Confirming...'; }
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/complaints/${complaintId}/student-resolve`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: 'Student', username: user.username })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Reload feed to reflect updated state
+                    document.querySelector('.grid-2').lastChild.remove();
+                    loadComplaintsFeed();
+                } else {
+                    alert(data.message);
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Mark as Resolved'; }
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to confirm resolution.');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Mark as Resolved'; }
+            }
+        }
+
+        async function postComment(complaintId) {
+            const input = document.getElementById(`input-${complaintId}`);
+            const text = input.value;
+
+            if (!text) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/complaints/${complaintId}/comment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: user.username,
+                        role: 'Student',
+                        comment: text,
+                        user_id: user._id || user.id
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Quick UI update without full reload
+                    const commentsDiv = document.getElementById(`comments-${complaintId}`);
+                    // Note: We'd ideally wait for the server to return the new comment object with its _id
+                    // but for dynamic UI feel, we can reload or use the returned object.
+                    // The backend now returns the comment object.
+                    const newCom = data.comment;
+
+                    const newCommentHtml = `
+                        <div id="comment-${newCom._id || 'temp'}" style="background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; border-left: 3px solid var(--primary);">
+                            <div style="font-weight: 600; color: #334155; display:flex; justify-content:space-between;">
+                                <span>${user.username} <span style="font-weight:400; color:#64748b; font-size:0.8rem;">(Student)</span></span>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <span style="font-weight:400; color:#94a3b8; font-size:0.8rem;">Just now</span>
+                                    <button onclick="deleteComment('${complaintId}', '${newCom._id}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.75rem; padding:0;">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="margin-top:4px; color: #475569;">${text}</div>
+                        </div>
+                    `;
+                    // Remove "No comments" text if it exists
+                    if (commentsDiv.innerHTML.includes('No comments yet')) commentsDiv.innerHTML = '';
+
+                    commentsDiv.innerHTML += newCommentHtml;
+                    // Auto scroll to bottom
+                    commentsDiv.scrollTop = commentsDiv.scrollHeight;
+
+                    input.value = '';
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to post comment');
+            }
+        }
+
+        async function deleteComment(complaintId, commentId) {
+            if (!confirm('Delete your comment?')) return;
+            const uid = user._id || user.id;
+            try {
+                const res = await fetch(`http://localhost:3000/api/complaints/${complaintId}/comment/${commentId}?role=Student&userId=${uid}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById(`comment-${commentId}`).remove();
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Load Behaviour Complaints Filed Against the Student
+        async function loadMyBehaviourComplaints() {
+            const list = document.getElementById('myBehaviourComplaintsList');
+            // We use the student's username as their ID for this feature
+            const studentId = user.username; 
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/student/my-behaviour-complaints?student_id=${studentId}`);
+                const complaints = await res.json();
+
+                if (complaints.length === 0) {
+                    list.innerHTML = '<p class="text-muted" style="font-size: 0.85rem;">No complaints registered on you.</p>';
+                } else {
+                    list.innerHTML = '<h5 style="margin-bottom:0.5rem; font-size:0.9rem;">Complaints Filed Against You:</h5>';
+                    complaints.forEach(c => {
+                        const card = document.createElement('div');
+                        card.style.background = 'rgba(255, 255, 255, 0.05)';
+                        card.style.padding = '10px';
+                        card.style.borderRadius = '8px';
+                        card.style.marginBottom = '10px';
+                        card.style.borderLeft = '3px solid var(--warning)';
+                        card.style.fontSize = '0.85rem';
+
+                        card.innerHTML = `
+                            <div style="font-weight:600; color:var(--warning); margin-bottom:4px;">${new Date(c.createdAt).toLocaleDateString()}</div>
+                            <div style="color:var(--text-main); margin-bottom:4px;">${c.complaint_text}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">
+                                <strong>Status:</strong> ${c.status} <br>
+                                <strong>Reporter:</strong> ${c.warden_id}
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<p class="text-muted" style="font-size: 0.85rem; color: var(--danger);">Failed to load.</p>';
+            }
+        }
+
+        // Initialize
+        loadComplaintsFeed();
+        loadMyBehaviourComplaints();
+
+        document.getElementById('complaintForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                studentName: user.username,
+                description: document.getElementById('description').value,
+                category: document.getElementById('category').value,
+                type: document.getElementById('type').value,
+                hostel: document.getElementById('hostel').value,
+                floor: document.getElementById('floor').value,
+                roomNumber: document.getElementById('roomNumber').value
+            };
+
+            const btn = e.target.querySelector('button');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:3000/api/complaints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    let title = 'Submitted';
+                    let icon = 'success';
+                    let text = 'Complaint registered.';
+
+                    // AI Feedback Logic
+                    if (data.isDuplicate) {
+                        title = 'Merged!';
+                        icon = 'info';
+                        text = 'Similar issue already reported. We added your vote.';
+                    } else if (data.aiNote) {
+                        text += ` (AI Note: ${data.aiNote})`;
+                    }
+
+                    Swal.fire({
+                        title: title,
+                        text: text,
+                        icon: icon,
+                        confirmButtonColor: '#6366f1',
+                        background: '#1e293b',
+                        color: '#fff'
+                    }).then(() => {
+                        // Refresh feed to show new complaint
+                        // Ideally we'd just prepend it, but reloading feed is safer for consistency
+                        document.querySelector('.grid-2').lastChild.remove(); // Remove old feed
+                        loadComplaintsFeed(); // Reload
+                    });
+
+                    if (!data.isDuplicate) e.target.reset();
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ title: 'Error', text: 'Failed to submit', icon: 'error', background: '#1e293b', color: '#fff' });
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

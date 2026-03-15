@@ -1,0 +1,22 @@
+[
+    {
+        "username": "admin",
+        "password": "password",
+        "role": "Admin",
+        "name": "Super Admin"
+    },
+    {
+        "username": "warden1",
+        "password": "password",
+        "role": "Warden",
+        "hostel": "Hostel B",
+        "name": "rahul"
+    },
+    {
+        "username": "student0475",
+        "password": "password",
+        "role": "Student",
+        "hostel": "Hostel A",
+        "name": "vinay"
+    }
+]

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOSTELMIND Login</title>
+    <!-- Fonts & Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="style.css?v=2" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="main-container">
+        <!-- Decorative Background Circle -->
+        <div class="bg-circle"></div>
+
+        <!-- SCREEN 1: LANDING / ROLE SELECTION -->
+        <div id="landingScreen" class="landing-content fade-in">
+            <img src="login-bg.png" alt="Hostel Illustration" class="hero-illustration">
+            <div class="title-group">
+                <h1 class="app-title">HOSTELMIND</h1>
+                <p class="app-subtitle">AI-Powered Complaint & Feedback Platform</p>
+            </div>
+
+            <div class="role-selection-grid">
+                <div class="role-btn" onclick="showLogin('Student')">
+                    <i class="fa-solid fa-user-graduate"></i>
+                    <span>Student</span>
+                </div>
+                <div class="role-btn" onclick="showLogin('Warden')">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Warden</span>
+                </div>
+                <div class="role-btn" onclick="showLogin('Admin')">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: LOGIN FORM -->
+        <div id="loginScreen" class="login-card-wrapper hidden">
+            <div class="login-card fade-in">
+                <button class="back-btn" onclick="showLanding()">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+
+                <div class="form-header">
+                    <h2 id="loginRoleTitle">Student Login</h2>
+                    <p>Enter your credentials to access the portal</p>
+                </div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="username" class="form-input" placeholder="Enter username" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="password" class="form-input" placeholder="Enter password"
+                                required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Login
+                    </button>
+
+                    <div style="text-align:center; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-info"></i> Protected by AI Spam Detection
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedRole = '';
+
+        function showLogin(role) {
+            selectedRole = role;
+            document.getElementById('loginRoleTitle').innerText = `${role} Login`;
+
+            // Ani-switch
+            const landing = document.getElementById('landingScreen');
+            const login = document.getElementById('loginScreen');
+
+            landing.classList.add('hidden');
+            login.classList.remove('hidden');
+        }
+
+        function showLanding() {
+            selectedRole = '';
+            document.getElementById('landingScreen').classList.remove('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+
+            btn.innerText = 'Verifying...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, role: selectedRole })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    // Smooth visual feedback
+                    btn.style.background = 'var(--success)';
+                    btn.innerText = 'Success!';
+
+                    setTimeout(() => {
+                        if (selectedRole === 'Admin') window.location.href = 'admin.html';
+                        else if (selectedRole === 'Warden') window.location.href = 'warden.html';
+                        else window.location.href = 'student.html';
+                    }, 800);
+                } else {
+                    alert(data.message || 'Login failed');
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Server connection error. Please restart server.');
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

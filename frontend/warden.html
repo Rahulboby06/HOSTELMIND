@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warden Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-shield-halved"></i> Warden Portal
+        </div>
+        <div class="nav-user">
+            <div class="nav-actions">
+                <div class="notification-bell" id="notificationBell" onclick="toggleNotifications()">
+                    <i class="fa-regular fa-bell"></i>
+                    <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+                </div>
+
+                <div class="notification-dropdown" id="notificationDropdown">
+                    <div class="notification-header">
+                        <h3>Emergency Alerts</h3>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-badge">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">W</div>
+                <span id="wardenNameDisplay">Warden</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <i class="fa-solid fa-power-off"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="flex-between" style="margin-bottom: 2rem;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 700;">Dashboard Overview</h1>
+                <p class="text-muted">Real-time complaint monitoring for <span id="hostelNameDisplay">All
+                        Hostels</span>.</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; background: var(--warning); color: #000;" onclick="toggleBehaviourForm()">
+                    <i class="fa-solid fa-user-shield"></i> Report Behaviour
+                </button>
+                <button id="btnToggleStudentComplaints" class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; background: var(--surface); color: #000;" onclick="toggleStudentComplaints()">
+                    <i class="fa-solid fa-user-graduate"></i> Student Complaints
+                </button>
+                <button id="btnRefresh" class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; color: #000;" onclick="handleRefresh()">
+                    <i class="fa-solid fa-rotate-right"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid-3" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Total Issues</h3>
+                    <div class="value" id="totalCount">0</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(99, 102, 241, 0.2); color: var(--primary);">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>High Urgency</h3>
+                    <div class="value" id="highCount" style="color: var(--urgency-high);">0</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--urgency-high);">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Auto-Merged</h3>
+                    <div class="value" id="dupCount">0</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">
+                    <i class="fa-solid fa-code-merge"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Alerts Area Removed -->
+
+        <!-- Student Behaviour Form (Initially Hidden) -->
+        <div id="behaviourFormContainer" class="glass" style="display: none; padding: 2rem; border-radius: 16px; margin-bottom: 2rem; border: 1px solid var(--warning);">
+            <div class="flex-between" style="margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-pen"></i> Student Behaviour Complaint</h2>
+                <button class="emergency-close" onclick="toggleBehaviourForm()" style="position: static; font-size: 1.5rem;">&times;</button>
+            </div>
+            <form id="behaviourForm">
+                <div class="form-group">
+                    <label class="form-label">Complaint Description</label>
+                    <textarea id="behDescription" class="form-textarea" rows="4" placeholder="Describe the student's behaviour..." required></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Student ID (11 characters)</label>
+                        <input type="text" id="behStudentId" class="form-input" placeholder="e.g. 21001A05XX" maxlength="11" minlength="11" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Student Name</label>
+                        <input type="text" id="behStudentName" class="form-input" placeholder="e.g. John Doe" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="background: var(--warning); color: #000; margin-top: 1rem;">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Complaint
+                </button>
+            </form>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 2rem;">
+            <div class="glass" style="padding: 1.5rem; border-radius: 16px; height: 320px;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="glass" style="padding: 1.5rem; border-radius: 16px; height: 320px;">
+                <canvas id="urgencyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Student Behaviour Complaints Section (Initially Hidden) -->
+        <div id="studentComplaintsView" style="display: none; margin-bottom: 2rem;">
+            <div class="glass" style="border-radius: 16px; padding: 2rem; border: 1px solid var(--primary);">
+                <div class="flex-between" style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                    <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-graduate"></i> Student Behaviour Complaints</h2>
+                    <span class="badge" style="background: var(--surface);">Read Only</span>
+                </div>
+                <div id="studentComplaintsList">
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i> <br><br> Loading student complaints...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feed -->
+        <div class="glass" style="border-radius: 16px; padding: 2rem;">
+            <div class="flex-between"
+                style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                <h2 style="font-size: 1.25rem;"><i class="fa-regular fa-bell"></i> Recent Complaints</h2>
+                <!-- Warden sees all -->
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span class="badge" style="background: var(--surface);">Showing All Complaints</span>
+                </div>
+            </div>
+
+            <div id="complaintsList">
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x"></i> <br><br> Loading feed...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Emergency Alert Popup -->
+    <div id="emergencyOverlay" class="emergency-overlay" style="display: none;">
+        <div class="emergency-popup">
+            <div class="emergency-header">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> EMERGENCY SOS</h2>
+                <button class="emergency-close" onclick="closeEmergencyPopup()">&times;</button>
+            </div>
+            <div class="emergency-body" style="cursor: pointer;" onclick="navigateToComplaint()">
+                <div class="emergency-title" id="emergTitle">Complaint Title</div>
+                <div class="emergency-desc" id="emergDesc">Complaint description details go here...</div>
+                <div style="font-size: 0.85rem; color: #991b1b; margin-bottom: 1rem; font-weight: 600;">
+                    Complaint ID: <span id="emergId">-</span>
+                </div>
+
+                <div
+                    style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.1);">
+                    <div style="font-size: 0.85rem; color: #991b1b; font-weight: 700;">LOCATION DETAILS</div>
+                    <div style="display: flex; gap: 1rem; font-size: 0.95rem; color: #1e293b;">
+                        <span><i class="fa-solid fa-building"></i> <span id="emergHostel">-</span></span>
+                        <span><i class="fa-solid fa-door-open"></i> Floor <span id="emergFloor">-</span></span>
+                        <span><i class="fa-solid fa-hashtag"></i> Room <span id="emergRoom">N/A</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="emergency-footer">
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" id="prevAlertBtn"
+                        style="width: auto; margin-top: 0; padding: 0.5rem; background: #94a3b8; display: none;"
+                        onclick="showEmergencyPopup(currentEmergIndex - 1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button class="btn-primary" id="nextAlertBtn"
+                        style="width: auto; margin-top: 0; padding: 0.5rem; background: #94a3b8; display: none;"
+                        onclick="showEmergencyPopup(currentEmergIndex + 1)">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+                <button class="btn-primary"
+                    style="width: auto; margin-top: 0; padding: 0.5rem 1rem; background: #ef4444;"
+                    onclick="acknowledgeEmergency()">
+                    Mark as Acknowledged
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const user = checkAuth('Warden');
+        if (user) {
+            document.getElementById('wardenNameDisplay').innerText = user.name || 'Warden';
+        }
+
+        // Chart Instances
+        let catChartInstance = null;
+        let urgChartInstance = null;
+
+        // Global state for emergencies
+        let emergencyAlerts = [];
+        let currentEmergIndex = 0;
+
+        async function loadDashboard(isRefresh = false) {
+            try {
+                // Pass role and includeEmergency parameter
+                const query = `?role=Warden&includeEmergency=true`;
+
+                const statsRes = await fetch('http://localhost:3000/api/stats' + query);
+                const stats = await statsRes.json();
+
+                const response = await fetch('http://localhost:3000/api/complaints' + query);
+                const data = await response.json();
+
+                // Handle the new response format if emergencyAlerts is included
+                const complaints = data.complaints || data;
+                emergencyAlerts = data.emergencyAlerts || [];
+
+                renderStats(stats, complaints);
+                renderCharts(stats);
+                renderComplaints(complaints);
+
+                // Handle Emergency UI
+                updateEmergencyUI();
+
+                // Auto-show popup if there are alerts and this was a user-initiated refresh or initial load
+                if (isRefresh && emergencyAlerts.length > 0) {
+                    showEmergencyPopup(0);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateEmergencyUI() {
+            const badge = document.getElementById('notificationBadge');
+            const list = document.getElementById('notificationList');
+
+            if (emergencyAlerts.length > 0) {
+                badge.innerText = emergencyAlerts.length;
+                badge.style.display = 'flex';
+
+                list.innerHTML = '';
+                emergencyAlerts.forEach((alert, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'notification-item';
+                    item.onclick = () => {
+                        showEmergencyPopup(index);
+                        toggleNotifications(); // close dropdown
+                    };
+                    item.innerHTML = `
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <div class="notification-item-content">
+                            <h4>${alert.category}</h4>
+                            <p>${alert.description}</p>
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 5px;">${alert.hostel} - Floor ${alert.floor}</div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } else {
+                badge.style.display = 'none';
+                list.innerHTML = '<div class="notification-empty">No active emergency alerts.</div>';
+            }
+        }
+
+        function showEmergencyPopup(index) {
+            const alert = emergencyAlerts[index];
+            if (!alert) return;
+
+            currentEmergIndex = index;
+            document.getElementById('emergTitle').innerText = alert.category;
+            document.getElementById('emergDesc').innerText = alert.description;
+            document.getElementById('emergId').innerText = alert.id;
+            document.getElementById('emergHostel').innerText = alert.hostel;
+            document.getElementById('emergFloor').innerText = alert.floor;
+            document.getElementById('emergRoom').innerText = alert.roomNumber || 'N/A';
+
+            document.getElementById('emergencyOverlay').style.display = 'flex';
+
+            // Handle pagination buttons
+            document.getElementById('prevAlertBtn').style.display = index > 0 ? 'block' : 'none';
+            document.getElementById('nextAlertBtn').style.display = index < emergencyAlerts.length - 1 ? 'block' : 'none';
+
+            // Play alert sound (optional enhancement)
+            try {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.volume = 0.2;
+                audio.play();
+            } catch (e) {
+                console.log("Audio play blocked by browser");
+            }
+        }
+
+        function closeEmergencyPopup() {
+            document.getElementById('emergencyOverlay').style.display = 'none';
+        }
+
+        function navigateToComplaint() {
+            const alert = emergencyAlerts[currentEmergIndex];
+            if (!alert) return;
+
+            closeEmergencyPopup();
+
+            const complaintCard = document.getElementById('complaint-' + alert.id);
+            if (complaintCard) {
+                // Scroll to card
+                complaintCard.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                // Add highlight
+                complaintCard.classList.add('highlighted-complaint');
+
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    if (document.getElementById('complaint-' + alert.id)) {
+                        document.getElementById('complaint-' + alert.id).classList.remove('highlighted-complaint');
+                    }
+                }, 3000);
+            }
+        }
+
+        function acknowledgeEmergency() {
+            // In a real app, this would call an API, but for now we follow:
+            // "Disappear from main view but still accessible from notification center"
+            closeEmergencyPopup();
+            // Optional: Mark it as read/acknowledged in UI
+        }
+
+        function toggleNotifications() {
+            document.getElementById('notificationDropdown').classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function (event) {
+            if (!event.target.closest('#notificationBell') && !event.target.closest('#notificationDropdown')) {
+                const dropdown = document.getElementById('notificationDropdown');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    dropdown.classList.remove('active');
+                }
+            }
+        }
+
+        function renderStats(stats, complaints) {
+            document.getElementById('totalCount').innerText = stats.total;
+            document.getElementById('highCount').innerText = stats.byUrgency['High'] || 0;
+
+            const duplicates = complaints.reduce((sum, c) => sum + (c.studentCount - 1), 0);
+            document.getElementById('dupCount').innerText = duplicates;
+        }
+
+        function renderCharts(stats) {
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.borderColor = '#334155';
+
+            const ctxCat = document.getElementById('categoryChart');
+
+            if (catChartInstance) catChartInstance.destroy();
+            catChartInstance = new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(stats.byCategory),
+                    datasets: [{
+                        data: Object.values(stats.byCategory),
+                        backgroundColor: ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        title: { display: true, text: 'Issues by Category', color: '#f8fafc', font: { size: 16 } }
+                    }
+                }
+            });
+
+            const ctxUrg = document.getElementById('urgencyChart');
+            if (urgChartInstance) urgChartInstance.destroy();
+            urgChartInstance = new Chart(ctxUrg, {
+                type: 'bar',
+                data: {
+                    labels: ['High', 'Medium', 'Low'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [stats.byUrgency.High, stats.byUrgency.Medium, stats.byUrgency.Low],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Urgency Distribution', color: '#f8fafc', font: { size: 16 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 4] } }
+                    }
+                }
+            });
+        }
+
+        function getDueDateBadge(c) {
+            if (!c.dueDate) return '';
+            const due = new Date(c.dueDate);
+            const now = new Date();
+            const isResolved = c.status === 'Resolved';
+            const isOnTime = isResolved || due >= now;
+            const badgeClass = isOnTime ? 'on-time' : 'overdue';
+            const label = due.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            return `<span class="due-date-badge ${badgeClass}"><i class="fa-regular fa-calendar-check"></i> ${label}</span>`;
+        }
+
+        function renderComplaints(complaints) {
+            const container = document.getElementById('complaintsList');
+            container.innerHTML = '';
+
+            if (complaints.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No complaints active.</div>';
+                return;
+            }
+
+            complaints.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'complaint-card';
+                item.id = 'complaint-' + c.id;
+
+                // Color coding border
+                const urgencyColor = c.urgency === 'High' ? 'var(--urgency-high)' :
+                    c.urgency === 'Medium' ? 'var(--urgency-medium)' : 'var(--urgency-low)';
+                item.style.borderLeftColor = urgencyColor;
+
+                let aiBadges = '';
+                if (c.studentCount > 1) {
+                    aiBadges += `<span class="badge" style="background:var(--warning); color:#000;">+${c.studentCount - 1} Duplicates</span>`;
+                }
+                if (c.isAutoCorrected) {
+                    aiBadges += `<span class="badge" style="background:var(--primary); color:#fff; border:none;"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Corrected</span>`;
+                }
+
+                // Prepare Comments HTML (Initially Hidden)
+                let commentsHtml = '';
+                if (c.comments && c.comments.length > 0) {
+                    c.comments.forEach(com => {
+                        commentsHtml += `
+                            <div style="background: #f8fafc; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem; border: 1px solid #e2e8f0;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                                    <strong>${com.user_name}</strong>
+                                    <span class="text-muted" style="font-size:0.8rem;">${new Date(com.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div style="color: #334155;">${com.comment_text}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    commentsHtml = '<div class="text-muted" style="font-style:italic;">No comments yet.</div>';
+                }
+
+                item.innerHTML = `
+                    <div class="complaint-top">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span class="badge ${c.urgency.toLowerCase()}">${c.urgency}</span>
+                            <span style="font-weight:600; font-size: 0.9rem;">${c.category}</span>
+                            ${aiBadges}
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            ${getDueDateBadge(c)}
+                            <span class="text-muted text-sm"><i class="fa-regular fa-clock"></i> ${new Date(c.timestamp).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="complaint-body">
+                        ${c.description}
+                    </div>
+
+                    <div class="complaint-meta flex-between">
+                        <div>
+                            <i class="fa-solid fa-location-dot"></i> Hostel: ${c.hostel} | Floor: ${c.floor} | Room: ${c.roomNumber || 'N/A'} <br>
+                            <i class="fa-regular fa-user"></i> ${c.studentName}
+                            ${c.type === 'Student Behaviour' ? `
+                                <div style="margin-top: 8px; padding: 8px; background: rgba(245, 158, 11, 0.1); border-radius: 6px; border-left: 3px solid var(--warning);">
+                                    <strong style="color: var(--warning); font-size: 0.8rem; display: block; margin-bottom: 2px;">REPROTED STUDENT:</strong>
+                                    <span style="font-size: 0.9rem;"><strong>Name:</strong> ${c.targetStudentName} | <strong>ID:</strong> ${c.targetStudentId}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    ${c.urgencyReason ? `
+                        <div class="ai-insight" style="margin-top: 1rem;">
+                            <strong><i class="fa-solid fa-robot"></i> AI Analysis</strong>
+                            ${c.urgencyReason}
+                            ${c.similarTo ? `<div style="margin-top:5px; font-size:0.85rem; color:var(--warning);">Merged with: "${c.similarTo.substring(0, 50)}..."</div>` : ''}
+                        </div>
+                    ` : ''}
+
+                    <!-- View Comments Toggle -->
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                         <button onclick="document.getElementById('comments-${c.id}').classList.toggle('hidden')" 
+                            style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600; padding:0; display:flex; align-items:center; gap:0.5rem;">
+                            <i class="fa-regular fa-comments"></i> View Comments (${c.comments ? c.comments.length : 0})
+                         </button>
+                         <div id="comments-${c.id}" class="hidden" style="margin-top: 1rem; padding: 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            ${commentsHtml}
+                         </div>
+                    </div>
+
+                    <!-- Resolution Controls -->
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                        ${c.wardenResolved && c.studentResolved ? `
+                            <div style="display:flex; align-items:center; gap:0.5rem; padding:0.6rem 1rem; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.4); border-radius:10px; color:#10b981; font-weight:700; font-size:0.9rem;">
+                                <i class="fa-solid fa-circle-check"></i> Complaint Fully Resolved
+                            </div>` : c.wardenResolved && !c.studentResolved ? `
+                            <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; color:#f59e0b; font-size:0.85rem; font-weight:600;">
+                                <i class="fa-solid fa-hourglass-half"></i> Waiting for Student confirmation
+                            </div>` : `
+                            <button id="warden-resolve-btn-${c.id}" onclick="wardenResolve('${c.id}')" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:0.5rem 1.2rem; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                                <i class="fa-solid fa-check"></i> Mark as Resolved
+                            </button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function wardenResolve(complaintId) {
+            const btn = document.getElementById(`warden-resolve-btn-${complaintId}`);
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Confirming...'; }
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/complaints/${complaintId}/warden-resolve`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: 'Warden' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Pass isRefresh=false so it doesn't auto-popup emergencies
+                    loadDashboard(false);
+                } else {
+                    alert(data.message);
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Mark as Resolved'; }
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to confirm resolution.');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Mark as Resolved'; }
+            }
+        }
+
+        // Behaviour Form Logic
+        function toggleBehaviourForm() {
+            const container = document.getElementById('behaviourFormContainer');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                container.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        let isViewingStudentComplaints = false;
+
+        function toggleStudentComplaints() {
+            isViewingStudentComplaints = !isViewingStudentComplaints;
+            const dashView = document.querySelectorAll('.stat-card, .grid-2, #systemicAlerts, .glass:not(#behaviourFormContainer):not(#studentComplaintsView)');
+            const studentView = document.getElementById('studentComplaintsView');
+            const btn = document.getElementById('btnToggleStudentComplaints');
+
+            if (isViewingStudentComplaints) {
+                // Hide Dashboard elements (careful with selector)
+                document.querySelectorAll('.stat-card, .grid-3, .grid-2, .glass:has(#complaintsList)').forEach(el => el.style.display = 'none');
+                studentView.style.display = 'block';
+                btn.innerHTML = '<i class="fa-solid fa-chart-line"></i> Dashboard View';
+                loadStudentComplaints();
+            } else {
+                // Show Dashboard
+                document.querySelector('.grid-3').style.display = 'grid';
+                document.querySelector('.grid-2').style.display = 'grid';
+                document.querySelectorAll('.glass:has(#complaintsList)').forEach(el => el.style.display = 'block');
+                studentView.style.display = 'none';
+                btn.innerHTML = '<i class="fa-solid fa-user-graduate"></i> Student Complaints';
+                loadDashboard();
+            }
+        }
+
+        async function loadStudentComplaints() {
+            const list = document.getElementById('studentComplaintsList');
+            list.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> <br><br> Loading student complaints...</div>';
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/warden/student-complaints?role=Warden`);
+                const complaints = await res.json();
+                renderStudentComplaints(complaints);
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--danger);">Failed to load student complaints.</div>';
+            }
+        }
+
+        function renderStudentComplaints(complaints) {
+            const list = document.getElementById('studentComplaintsList');
+            list.innerHTML = '';
+
+            if (!complaints || complaints.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No student behaviour complaints found.</div>';
+                return;
+            }
+
+            complaints.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'complaint-card';
+                card.style.borderLeftColor = 'var(--warning)';
+
+                card.innerHTML = `
+                    <div class="complaint-top">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span class="badge" style="background:var(--warning); color:#000;">Disciplinary</span>
+                            <span style="font-weight:600; font-size: 0.9rem;">Behaviour Report</span>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span class="text-muted text-sm"><i class="fa-regular fa-clock"></i> ${new Date(c.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="complaint-body">
+                        ${c.complaint_text}
+                    </div>
+
+                    <div class="complaint-meta" style="margin-bottom: 0;">
+                        <div style="padding: 12px; background: rgba(245, 158, 11, 0.05); border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.1);">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <small style="color:var(--text-muted); display:block; margin-bottom: 2px;">STUDENT NAME</small>
+                                    <strong>${c.student_name}</strong>
+                                </div>
+                                <div>
+                                    <small style="color:var(--text-muted); display:block; margin-bottom: 2px;">STUDENT ID</small>
+                                    <strong>${c.student_id}</strong>
+                                </div>
+                                <div>
+                                    <small style="color:var(--text-muted); display:block; margin-bottom: 2px;">FILED BY WARDEN</small>
+                                    <strong>${c.warden_id}</strong>
+                                </div>
+                                <div>
+                                    <small style="color:var(--text-muted); display:block; margin-bottom: 2px;">CURRENT STATUS</small>
+                                    <span class="badge" style="background:var(--surface);">${c.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function handleRefresh() {
+            if (isViewingStudentComplaints) {
+                loadStudentComplaints();
+            } else {
+                loadDashboard(true);
+            }
+        }
+
+        document.getElementById('behaviourForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Submitting...';
+
+            const payload = {
+                studentName: user.username || user.name || 'Warden',
+                description: document.getElementById('behDescription').value,
+                category: 'Disciplinary',
+                type: 'Student Behaviour',
+                hostel: user.hostel || 'Default',
+                floor: 0, // Placeholder
+                roomNumber: 'N/A',
+                targetStudentId: document.getElementById('behStudentId').value,
+                targetStudentName: document.getElementById('behStudentName').value
+            };
+
+            try {
+                const res = await fetch('http://localhost:3000/api/complaints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Behaviour complaint submitted successfully.');
+                    e.target.reset();
+                    toggleBehaviourForm();
+                    loadDashboard();
+                } else {
+                    alert('Submission failed: ' + data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>
