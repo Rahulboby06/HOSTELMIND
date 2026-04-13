@@ -1,0 +1,136 @@
+/* =====================================================================
+   7.1. Algorithm for Descriptor-Based Face Recognition Authentication
+   ===================================================================== */
+
+Algorithm: Face Recognition Authentication
+Input: Extracted Face Descriptor (Float32Array[128]) from Camera, User ID
+Output: Boolean (True if Access Granted, False if Access Denied)
+
+Step 1: Start initialization.
+Step 2: ON Request Login (User ID):
+          Fetch Stored_Descriptor[128] from MongoDB for User ID.
+Step 3: IF Stored_Descriptor is NULL:
+          Return Fallback to Password/OTP Login.
+Step 4: SET Capture = Extract_Face_Descriptor_From_Live_Camera().
+Step 5: IF Capture is NULL:
+          Return "Face not detected. Try again."
+Step 6: SET Distance = 0.0
+Step 7: FOR i = 0 to 127 DO:
+          Diff = Capture[i] - Stored_Descriptor[i]
+          Distance = Distance + (Diff * Diff)
+        END FOR
+Step 8: SET Euclidean_Distance = SquareRoot(Distance)
+Step 9: SET MATCH_THRESHOLD = 0.50  // Maximum allowable distance
+Step 10: IF Euclidean_Distance < MATCH_THRESHOLD THEN:
+           Return Success (Access Granted)
+         ELSE:
+           Return Failed (Access Denied)
+Step 11: End
+
+
+/* =====================================================================
+   7.2. Algorithm for Context-Aware Dual Authentication (2FA)
+   ===================================================================== */
+
+Algorithm: Secure 2FA Login Flow
+Input: Username, Password, Role type
+
+Step 1: Hash input Password.
+Step 2: Compare Password Hash with Database.
+Step 3: IF match is False -> Return "Invalid Credentials".
+Step 4: IF match is True AND Role == 'Student':
+           Generate Session Token.
+           Return Logged In successfully.
+Step 5: IF Role == 'Warden' OR Role == 'Admin':
+           Generate 6-digit Random OTP.
+           Set Expiry_Time = Current_Time + 5 Minutes.
+           SAVE OTP, Expiry_Time associated with User ID in Cache Map.
+           Trigger notification channel.
+Step 6: AWAIT OTP input from User.
+Step 7: IF User_Input_OTP == Cached_OTP AND Current_Time < Expiry_Time:
+           DELETE OTP from Cache.
+           Generate Session Token.
+           Return Logged In successfully.
+        ELSE:
+           Return "OTP Invalid or Expired."
+
+
+/* =====================================================================
+   7.3. Algorithm for AI Smart Issue Classification and Urgency Prediction
+   ===================================================================== */
+
+Algorithm: Smart Classification & Urgency Inference
+Input: Raw Complaint Text String (T)
+Output: Urgency Level, AI Confidence, Auto-Assigned Department
+
+Step 1: INIT URGENCY_DICT { 
+           High: [fire, short-circuit, blood, shock...], 
+           Medium: [broken, stuck, smell...], 
+           Low: [dust, dirty, wi-fi...] 
+        }
+Step 2: PREPROCESS: 
+           Convert T to lowercase.
+           Remove punctuation from T.
+           Tokenize T into array of Words (W).
+Step 3: SET Priority = "Low" (Default)
+Step 4: FOR EACH word in W:
+           IF word in URGENCY_DICT['High']:
+               SET Priority = "High", BREAK loop.
+           ELSE IF word in URGENCY_DICT['Medium']:
+               SET Priority = "Medium".
+Step 5: CALCULATE Department Scores:
+           FOR EACH word in W:
+               Map against DEPARTMENT_KEYWORDS (Plumbing, Electrical, etc.)
+               Increment respective Department Score by 1.
+Step 6: FIND Highest Scoring Department.
+Step 7: IF Highest Scoring Department != User_Selected_Department:
+           SET Final_Department = Highest Scoring Department.
+           SET isAutoCorrected = True.
+Step 8: RETURN Priority, Final_Department.
+
+
+/* =====================================================================
+   7.4. Algorithm for AI-Powered Duplicate Complaint Detection
+   ===================================================================== */
+
+Algorithm: Token Overlap Duplicate Detection
+Input: New Complaint Text (NT), List of Existing Open Complaints in Hostel (C_List)
+Output: Boolean (True if Duplicate), Merged Ticket ID
+
+Step 1: Tokenize NT into a Set of unique words (Tokens_New).
+Step 2: SET SIMILARITY_THRESHOLD = 0.40
+Step 3: SET Highest_Sim = 0.0
+Step 4: SET Best_Match_ID = NULL
+Step 5: FOR EACH Complaint C in C_List:
+           Tokenize C.description into Set (Tokens_Existing).
+           CALCULATE Intersection Count = Tokens_New INTERSECT Tokens_Existing
+           CALCULATE Union Count = Tokens_New UNION Tokens_Existing
+           CALCULATE Jaccard_Sim = Intersection Count / Union Count
+           IF Jaccard_Sim > Highest_Sim:
+               Highest_Sim = Jaccard_Sim
+               Best_Match_ID = C.id
+Step 6: IF Highest_Sim >= SIMILARITY_THRESHOLD:
+           Increment Student Count (Upvote) on Best_Match_ID.
+           Return True, Best_Match_ID.
+        ELSE:
+           Create New Database Entry.
+           Return False.
+
+
+/* =====================================================================
+   7.5. Algorithm for Multi-Party Complaint Resolution Handshake
+   ===================================================================== */
+
+Algorithm: Resolution Handshake State Machine
+Input: Action from Warden/Admin OR Action from Student
+
+Step 1: IF Action == "Warden Resolved":
+           Update Status Phase 1: SET Warden_Resolved = True.
+           IF Student_Resolved == True:
+               SET System_Status = "Fully Resolved".
+           ELSE:
+               SET System_Status = "Pending Student Confirmation".
+Step 2: IF Action == "Student Reopened":
+           Update Status Phase 1: SET Student_Resolved = False.
+           SET System_Status = "Pending Action (Reopened)".
+Step 3: RETURN System_Status to Frontend UI.
