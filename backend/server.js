@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const bcrypt = require('bcrypt');
 const connectDB = require('./config/db');
 const { predictUrgency, predictDepartment, detectDuplicates } = require('./ai_logic');
 
@@ -10,9 +11,19 @@ const User = require('./models/User');
 const Complaint = require('./models/Complaint');
 const Hostel = require('./models/Hostel');
 const StudentComplaint = require('./models/StudentComplaint');
+const PasswordResetOTP = require('./models/PasswordResetOTP');
 
 const app = express();
-const PORT = 3000;
+let PORT = process.env.PORT || 3000;
+
+// ============================================================
+// 2FA: In-memory OTP store (Admin & Warden)
+// Admin key  : "<adminId>"        (bare MongoDB ObjectId string)
+// Warden key : "warden_<userId>"  (prefixed to avoid collisions)
+// Value: { otp, expiresAt }
+// OTPs are cleared after use or on expiry.
+// ============================================================
+const otpStore = new Map();
 
 // Connect to MongoDB
 connectDB();
@@ -28,13 +39,60 @@ const urgencyOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
 app.post('/api/login', async (req, res) => {
     const { username, password, role } = req.body;
     try {
-        const user = await User.findOne({ username, password, role }).populate('hostel');
+        const user = await User.findOne({ username, role }).populate('hostel');
 
         if (user) {
+            // Support both bcrypt hashes and legacy plain text passwords
+            let isMatch = false;
+            // bcrypt hashes start with $2a$, $2b$, or $2y$
+            if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$')) {
+                isMatch = await bcrypt.compare(password, user.password);
+            } else {
+                // Fallback for existing plaintext passwords
+                isMatch = (user.password === password);
+            }
+
+            if (!isMatch) {
+                return res.json({ success: false, message: 'Invalid credentials' });
+            }
+
             // Check for additional role-based validations
             if (role === 'Warden' && !user.hostel) {
                 return res.json({ success: false, message: 'Warden not assigned to a hostel.' });
             }
+
+            // ── 2FA: Admin and Warden login require OTP verification ────
+            if (role === 'Admin' || role === 'Warden') {
+                // Generate a shared 6-digit OTP helper (same logic for both roles)
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
+                const userId = user._id.toString();
+
+                // Key scheme: Admin → bare userId, Warden → "warden_<userId>"
+                // This prevents key collisions between the two roles.
+                const storeKey = role === 'Warden' ? `warden_${userId}` : userId;
+                otpStore.set(storeKey, { otp, expiresAt });
+
+                // For demo: print OTP in console instead of sending email/SMS
+                console.log(`\n[2FA] ==============================`);
+                console.log(`[2FA] ${role} OTP for '${username}': ${otp}`);
+                console.log(`[2FA] Expires in 5 minutes.`);
+                console.log(`[2FA] ==============================\n`);
+
+                // Return a signal to the frontend to show the OTP step.
+                // Do NOT return user data until OTP is verified!
+                // userId and role are passed back so the frontend can send them in /verify-otp.
+                // ALSO return faceData details for optional face recognition
+                return res.json({ 
+                    success: true, 
+                    otpRequired: true, 
+                    userId, 
+                    role,
+                    faceDataExists: !!user.faceDescriptor && user.faceDescriptor.length > 0,
+                    faceData: user.faceDescriptor || null
+                });
+            }
+            // ────────────────────────────────────────────────────────────
 
             // Flatten hostel object to name string for frontend compatibility
             const userObj = user.toObject();
@@ -49,6 +107,194 @@ app.post('/api/login', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// ============================================================
+// 2FA: UNIFIED OTP Verification Route
+// POST /verify-otp
+// Body: { userId, role, otp }
+//   role must be 'Admin' or 'Warden'
+// Returns: { success: true, user } on valid OTP
+//          { success: false, message } on failure
+// ============================================================
+app.post('/verify-otp', async (req, res) => {
+    const { userId, role, otp } = req.body;
+
+    if (!userId || !role || !otp) {
+        return res.status(400).json({ success: false, message: 'userId, role, and otp are required.' });
+    }
+
+    // Validate that only privileged roles use this route (students never have 2FA)
+    if (role !== 'Admin' && role !== 'Warden') {
+        return res.status(403).json({ success: false, message: 'OTP verification is only for Admin and Warden roles.' });
+    }
+
+    // Derive the correct store key based on role:
+    //   Admin  → bare userId
+    //   Warden → "warden_<userId>"
+    const storeKey = role === 'Warden' ? `warden_${userId}` : userId;
+    const stored = otpStore.get(storeKey);
+
+    if (!stored) {
+        return res.json({ success: false, message: 'No OTP found. Please login again.' });
+    }
+
+    // Check expiry
+    if (Date.now() > stored.expiresAt) {
+        otpStore.delete(storeKey); // Clean up expired OTP
+        return res.json({ success: false, message: 'OTP has expired. Please login again.' });
+    }
+
+    // Check OTP matches
+    if (otp.trim() !== stored.otp) {
+        return res.json({ success: false, message: 'Invalid OTP. Please try again.' });
+    }
+
+    // ── OTP is valid: delete it (one-time use) and complete login ──
+    otpStore.delete(storeKey);
+
+    try {
+        const user = await User.findById(userId).populate('hostel');
+        if (!user) {
+            return res.status(404).json({ success: false, message: `${role} account not found.` });
+        }
+
+        // Flatten hostel object to name string for frontend compatibility
+        const userObj = user.toObject();
+        if (userObj.hostel && typeof userObj.hostel === 'object') {
+            userObj.hostel = userObj.hostel.hostel_name;
+        }
+
+        console.log(`[2FA] OTP verified successfully for ${role}: ${user.username}`);
+        res.json({ success: true, user: userObj });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server error during OTP verification.' });
+    }
+});
+
+// ============================================================
+// 2FA: LEGACY Admin-only OTP Route (kept for backward compat)
+// POST /admin/verify-otp — delegates to the same store logic
+// Body: { adminId, otp }
+// ============================================================
+app.post('/admin/verify-otp', async (req, res) => {
+    const { adminId, otp } = req.body;
+    // Re-use unified route logic by injecting role = 'Admin'
+    req.body.userId = adminId;
+    req.body.role = 'Admin';
+    // Forward to /verify-otp handler by calling the same logic inline
+    if (!adminId || !otp) {
+        return res.status(400).json({ success: false, message: 'adminId and otp are required.' });
+    }
+    const stored = otpStore.get(adminId);
+    if (!stored) return res.json({ success: false, message: 'No OTP found. Please login again.' });
+    if (Date.now() > stored.expiresAt) {
+        otpStore.delete(adminId);
+        return res.json({ success: false, message: 'OTP has expired. Please login again.' });
+    }
+    if (otp.trim() !== stored.otp) return res.json({ success: false, message: 'Invalid OTP. Please try again.' });
+    otpStore.delete(adminId);
+    try {
+        const user = await User.findById(adminId).populate('hostel');
+        if (!user) return res.status(404).json({ success: false, message: 'Admin account not found.' });
+        const userObj = user.toObject();
+        if (userObj.hostel && typeof userObj.hostel === 'object') userObj.hostel = userObj.hostel.hostel_name;
+        console.log(`[2FA] OTP verified successfully for admin: ${user.username}`);
+        res.json({ success: true, user: userObj });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server error during OTP verification.' });
+    }
+});
+
+// ============================================================
+// FORGOT PASSWORD PROCESS
+// ============================================================
+
+// POST /auth/forgot-password
+app.post('/auth/forgot-password', async (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ success: false, message: 'Username is required.' });
+    }
+
+    try {
+        const user = await User.findOne({ username });
+        if (!user) {
+            // Return generic success to avoid username enumeration
+            return res.json({ success: true, message: 'If the username exists, an OTP has been generated.' });
+        }
+
+        // Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+
+        // Remove any existing OTP for this user
+        await PasswordResetOTP.deleteMany({ userId: user._id });
+
+        // Save new OTP
+        const newOtp = new PasswordResetOTP({
+            userId: user._id,
+            otp,
+            expiresAt
+        });
+        await newOtp.save();
+
+        // For demo: print OTP in console
+        console.log(`\n[PASSWORD RESET] ========================`);
+        console.log(`[PASSWORD RESET] OTP for '${username}': ${otp}`);
+        console.log(`[PASSWORD RESET] Expires in 5 minutes.`);
+        console.log(`[PASSWORD RESET] ========================\n`);
+
+        res.json({ success: true, message: 'OTP generated successfully.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server error during forgot password.' });
+    }
+});
+
+// POST /auth/reset-password
+app.post('/auth/reset-password', async (req, res) => {
+    const { username, otp, newPassword } = req.body;
+
+    if (!username || !otp || !newPassword) {
+        return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    try {
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Invalid request.' });
+        }
+
+        const otpRecord = await PasswordResetOTP.findOne({ userId: user._id, otp: otp.trim() });
+        if (!otpRecord) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP.' });
+        }
+
+        if (new Date() > otpRecord.expiresAt) {
+            await PasswordResetOTP.deleteMany({ userId: user._id });
+            return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+        }
+
+        // Hash new password using bcrypt
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user's password
+        user.password = hashedPassword;
+        await user.save();
+
+        // Delete OTP after successful use
+        await PasswordResetOTP.deleteMany({ userId: user._id });
+
+        console.log(`[PASSWORD RESET] Password successfully reset for user: ${username}`);
+        res.json({ success: true, message: 'Password has been safely reset. You can now log in.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server error during password reset.' });
     }
 });
 
@@ -403,11 +649,15 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.post('/api/users', async (req, res) => {
-    const { username, role, hostel, name } = req.body;
+    const { username, password, role, hostel, name, faceData } = req.body;
     try {
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ success: false, message: 'Username already exists' });
+        }
+
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Password is required' });
         }
 
         let hostelId = undefined;
@@ -419,12 +669,16 @@ app.post('/api/users', async (req, res) => {
             hostelId = hostelDoc._id;
         }
 
+        // Securely hash the password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const newUser = new User({
             username,
-            password: 'password', // Default
+            password: hashedPassword,
             role,
             hostel: hostelId,
-            name
+            name,
+            faceDescriptor: req.body.faceDescriptor || null
         });
 
         await newUser.save();
@@ -621,7 +875,20 @@ app.patch('/api/complaints/:id/student-resolve', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Frontend accessible via http://localhost:${PORT}/index.html`);
-});
+// --- Robust Server Startup ---
+function startServer(port) {
+    const server = app.listen(port, () => {
+        console.log(`\n🚀 Server is running!`);
+        console.log(`🔗 Local: http://localhost:${port}`);
+        console.log(`📂 Frontend: http://localhost:${port}/index.html\n`);
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`⚠️  Port ${port} is already in use. Trying port ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error('❌ Server error:', err);
+        }
+    });
+}
+
+startServer(PORT);

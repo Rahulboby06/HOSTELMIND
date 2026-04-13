@@ -7,6 +7,8 @@
     <title>Warden Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
 </head>
@@ -34,7 +36,7 @@
             </div>
 
             <div class="user-badge">
-                <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">W</div>
+                <div class="user-avatar">W</div>
                 <span id="wardenNameDisplay">Warden</span>
             </div>
             <button class="btn-logout" onclick="logout()">
@@ -50,14 +52,14 @@
                 <p class="text-muted">Real-time complaint monitoring for <span id="hostelNameDisplay">All
                         Hostels</span>.</p>
             </div>
-            <div style="display: flex; gap: 1rem;">
-                <button class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; background: var(--warning); color: #000;" onclick="toggleBehaviourForm()">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn-primary" style="width: auto; padding: 0.65rem 1.25rem; background: linear-gradient(135deg, #F59E0B, #EA580C);" onclick="toggleBehaviourForm()">
                     <i class="fa-solid fa-user-shield"></i> Report Behaviour
                 </button>
-                <button id="btnToggleStudentComplaints" class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; background: var(--surface); color: #000;" onclick="toggleStudentComplaints()">
+                <button id="btnToggleStudentComplaints" class="btn-primary" style="width: auto; padding: 0.65rem 1.25rem;" onclick="toggleStudentComplaints()">
                     <i class="fa-solid fa-user-graduate"></i> Student Complaints
                 </button>
-                <button id="btnRefresh" class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; color: #000;" onclick="handleRefresh()">
+                <button id="btnRefresh" class="btn-primary" style="width: auto; padding: 0.65rem 1.25rem;" onclick="handleRefresh()">
                     <i class="fa-solid fa-rotate-right"></i> Refresh
                 </button>
             </div>
@@ -70,7 +72,7 @@
                     <h3>Total Issues</h3>
                     <div class="value" id="totalCount">0</div>
                 </div>
-                <div class="stat-icon" style="background: rgba(99, 102, 241, 0.2); color: var(--primary);">
+                <div class="stat-icon" style="background: #EFF6FF; color: var(--primary);">
                     <i class="fa-solid fa-clipboard-list"></i>
                 </div>
             </div>
@@ -79,7 +81,7 @@
                     <h3>High Urgency</h3>
                     <div class="value" id="highCount" style="color: var(--urgency-high);">0</div>
                 </div>
-                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--urgency-high);">
+                <div class="stat-icon" style="background: #FEE2E2; color: var(--urgency-high);">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
             </div>
@@ -88,7 +90,7 @@
                     <h3>Auto-Merged</h3>
                     <div class="value" id="dupCount">0</div>
                 </div>
-                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">
+                <div class="stat-icon" style="background: #D1FAE5; color: var(--success);">
                     <i class="fa-solid fa-code-merge"></i>
                 </div>
             </div>
@@ -124,20 +126,20 @@
         </div>
 
         <div class="grid-2" style="margin-bottom: 2rem;">
-            <div class="glass" style="padding: 1.5rem; border-radius: 16px; height: 320px;">
+            <div class="glass" style="padding: 1.5rem; height: 320px;">
                 <canvas id="categoryChart"></canvas>
             </div>
-            <div class="glass" style="padding: 1.5rem; border-radius: 16px; height: 320px;">
+            <div class="glass" style="padding: 1.5rem; height: 320px;">
                 <canvas id="urgencyChart"></canvas>
             </div>
         </div>
 
         <!-- Student Behaviour Complaints Section (Initially Hidden) -->
         <div id="studentComplaintsView" style="display: none; margin-bottom: 2rem;">
-            <div class="glass" style="border-radius: 16px; padding: 2rem; border: 1px solid var(--primary);">
+            <div class="glass" style="padding: 2rem; border-left: 3px solid var(--primary);">
                 <div class="flex-between" style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
-                    <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-graduate"></i> Student Behaviour Complaints</h2>
-                    <span class="badge" style="background: var(--surface);">Read Only</span>
+                    <h2 style="font-size: 1.2rem; font-weight: 800; color: var(--text-dark);"><i class="fa-solid fa-user-graduate"></i> Student Behaviour Complaints</h2>
+                    <span class="badge" style="background: var(--primary-light); color: var(--primary);">Read Only</span>
                 </div>
                 <div id="studentComplaintsList">
                     <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
@@ -148,13 +150,12 @@
         </div>
 
         <!-- Feed -->
-        <div class="glass" style="border-radius: 16px; padding: 2rem;">
+        <div class="glass" style="padding: 2rem;">
             <div class="flex-between"
                 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
-                <h2 style="font-size: 1.25rem;"><i class="fa-regular fa-bell"></i> Recent Complaints</h2>
-                <!-- Warden sees all -->
+                <h2 style="font-size: 1.2rem; font-weight: 800; color: var(--text-dark);"><i class="fa-regular fa-bell"></i> Recent Complaints</h2>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <span class="badge" style="background: var(--surface);">Showing All Complaints</span>
+                    <span class="badge" style="background: var(--primary-light); color: var(--primary);">Showing All</span>
                 </div>
             </div>
 
@@ -248,8 +249,8 @@
                 // Handle Emergency UI
                 updateEmergencyUI();
 
-                // Auto-show popup if there are alerts and this was a user-initiated refresh or initial load
-                if (isRefresh && emergencyAlerts.length > 0) {
+                // Auto-show popup if there are alerts (initial load or refresh)
+                if (emergencyAlerts.length > 0) {
                     showEmergencyPopup(0);
                 }
             } catch (err) {
@@ -377,8 +378,8 @@
         }
 
         function renderCharts(stats) {
-            Chart.defaults.color = '#94a3b8';
-            Chart.defaults.borderColor = '#334155';
+            Chart.defaults.color = '#64748B';
+            Chart.defaults.borderColor = '#E2E8F0';
 
             const ctxCat = document.getElementById('categoryChart');
 
