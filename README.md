@@ -1,18 +1,8 @@
-<h1 align="center">
-  <br>
-  HOSTELMIND 🏢🤖
-  <br>
-</h1>
+# HOSTELMIND 🏢🤖
 
-<h4 align="center">An Advanced, AI-Powered Smart Hostel Management & Issue Resolution System</h4>
+#### An Advanced, AI-Powered Smart Hostel Management & Issue Resolution System
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#core-algorithms">Core Algorithms</a> •
-  <a href="#getting-started">Getting Started</a>
-</p>
+[Features](#features) • [Architecture](#architecture) • [Tech Stack](#tech-stack) • [Core Algorithms](#core-algorithms) • [Getting Started](#getting-started)
 
 ---
 
@@ -103,8 +93,4 @@ The core of `HOSTELMIND` relies on proprietary programmatic logic designed for s
 - Passwords (as a fallback) are salted and hashed utilizing `bcrypt`.
 - Students do not have deletion permissions over authoritative resolution logs.
 
-<br>
-
-<p align="center">
-  <i>Built with ❤️ for a smarter campus environment.</i>
-</p>
+*Built with ❤️ for a smarter campus environment.*
